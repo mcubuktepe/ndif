@@ -12,7 +12,7 @@ from click import Option
 
 import nnsight
 from nnsight import util
-from nnsight.pydantics import RequestModel
+from nnsight.pydantics.Request import RequestModel
 from nnsight.pydantics.format import FUNCTIONS_WHITELIST, get_function_name
 from nnsight.pydantics.format.types import FUNCTION, FunctionWhitelistError
 from nnsight.tracing.Proxy import Proxy
@@ -149,16 +149,10 @@ def run_model(request: RequestModel):
     try:
         
         # Compile request
-        request.compile()
+        obj = request.compile()
         
-        # Execute model with intervention graph.
-
-        output = model.interleave(
-            model._execute,
-            request.intervention_graph,
-            *request.batched_input,
-            **request.kwargs,
-        )
+        # Execute object.
+        obj.local_backend_execute()
 
         ResponseModel(
             id=request.id,
