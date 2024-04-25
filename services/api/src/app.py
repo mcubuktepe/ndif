@@ -12,7 +12,7 @@ from fastapi.responses import StreamingResponse
 from fastapi_socketio import SocketManager
 from pymongo import MongoClient
 
-from nnsight.pydantics import RequestModel
+from nnsight.pydantics.Request import RequestModel
 
 from .api_key import api_key_auth
 from .celery import celeryconfig

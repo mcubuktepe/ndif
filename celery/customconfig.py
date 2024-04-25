@@ -1,5 +1,5 @@
 
-repo_id = None
+model_key = None
 
 model_kwargs = None
 

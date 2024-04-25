@@ -24,7 +24,7 @@ logger = get_task_logger(__name__)
 
 app = celery.Celery("tasks")
 
-app.user_options["worker"].add(Option(["--repo_id"], default=None))
+app.user_options["worker"].add(Option(["--model_key"], default=None))
 app.user_options["worker"].add(Option(["--model_kwargs"], default=None))
 app.user_options["worker"].add(
     Option(
@@ -34,7 +34,7 @@ app.user_options["worker"].add(
 )
 
 # Model.
-# Only gets populated if `repo_id` custom argument is defined.
+# Only gets populated if `model_key` custom argument is defined.
 model = None
 
 
@@ -42,16 +42,16 @@ class CustomArgs(bootsteps.StartStopStep):
     def __init__(
         self,
         worker: worker.WorkController,
-        repo_id,
+        model_key,
         model_kwargs,
         api_url,
         **options,
     ):
-        customconfig.repo_id = repo_id
+        customconfig.model_key = model_key
         customconfig.model_kwargs = model_kwargs
         customconfig.api_url = api_url
 
-        if customconfig.repo_id is not None:
+        if customconfig.model_key is not None:
             model_kwargs = (
                 eval(customconfig.model_kwargs)
                 if customconfig.model_kwargs is not None
@@ -61,7 +61,7 @@ class CustomArgs(bootsteps.StartStopStep):
             global model
 
             model = nnsight.LanguageModel(
-                customconfig.repo_id, dispatch=True, device_map="auto", **model_kwargs
+                customconfig.model_key, dispatch=True, device_map="auto", **model_kwargs
             )
 
             mem_params = sum(
@@ -78,7 +78,7 @@ class CustomArgs(bootsteps.StartStopStep):
             )
             mem_gbs = (mem_params + mem_bufs) * 1e-9
 
-            logger.info(f"MEM: {customconfig.repo_id} size {mem_gbs:.2f}GBs")
+            logger.info(f"MEM: {customconfig.model_key} size {mem_gbs:.2f}GBs")
 
             def info_wrapper(fn):
                 @wraps(fn)
@@ -86,7 +86,7 @@ class CustomArgs(bootsteps.StartStopStep):
                     info: dict = fn(*args, **kwargs)
 
                     info["custom_info"] = {
-                        "repo_id": repo_id,
+                        "model_key": model_key,
                         "config_json_string": model._model.config.to_json_string()
                         if hasattr(model._model, "config")
                         else None,
@@ -149,10 +149,10 @@ def run_model(request: RequestModel):
     try:
         
         # Compile request
-        obj = request.compile()
+        obj = request.compile(model)
         
         # Execute object.
-        obj.local_backend_execute()
+        local_result = obj.local_backend_execute()
 
         ResponseModel(
             id=request.id,
@@ -162,14 +162,7 @@ def run_model(request: RequestModel):
             description="Your job has been completed.",
             result=ResultModel(
                 id=request.id,
-                # Move all copied data to cpu
-                saves={
-                    name: util.apply(
-                        node.value, lambda x: x.detach().cpu(), torch.Tensor
-                    )
-                    for name, node in request.intervention_graph.nodes.items()
-                    if node.value is not inspect._empty
-                },
+                value=obj.remote_backend_postprocess_result(local_result),
             ),
         ).log(logger).save(app.backend._get_connection()).blocking_response(
             customconfig.api_url
@@ -190,6 +183,8 @@ def run_model(request: RequestModel):
 
     del request
     del output
+    del obj
+    del local_result
 
     model._model.zero_grad()
     
@@ -212,7 +207,7 @@ def process_request(request: RequestModel):
     """
     try:
         # Model workers should listen on a queue with name in the format: models-<huggingface repo id>
-        queue_name = f"models-{request.repo_id}"
+        queue_name = f"models-{request.model_key}"
 
         # Check if a queue for this model services exists.
         # If not, raise error and inform user.
@@ -223,7 +218,7 @@ def process_request(request: RequestModel):
                     queue = channel.queue_declare(queue_name, passive=True)
                 except exceptions.NotFound:
                     raise ValueError(
-                        f"Model with id '{request.repo_id}' not among hosted models."
+                        f"Model with id '{request.model_key}' not among hosted models."
                     )
 
             # Have model workers for this model process the request.
