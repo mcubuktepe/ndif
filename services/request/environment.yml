@@ -2,8 +2,9 @@ channels:
   - conda-forge
 dependencies:
   - python=3.10
+  - git 
   - pip
-
+  
   - pip:
     - pip
     - setuptools
@@ -11,5 +12,5 @@ dependencies:
     - celery
     - requests
     - torch
-    - nnsight
+    - git+https://github.com/ndif-team/nnsight.git@0.3
     - numpy
