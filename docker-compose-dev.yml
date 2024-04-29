@@ -39,7 +39,7 @@ services:
       API_URL: http://10.201.22.179:5001
       RMQ_URL: amqp://guest:guest@10.201.22.179:5002/
       MONGO_URL: mongodb://user:pass@10.201.22.179:5003/celery_result_backend 
-      REPO_ID: gpt2
+      MODEL_KEY: gpt2
     volumes:
       - /disk/u/jfiottok/.cache/huggingface/hub/:/home/celery/.cache/huggingface/hub
     deploy:

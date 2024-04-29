@@ -2,6 +2,7 @@ channels:
   - conda-forge
 dependencies:
   - python=3.10
+  - git
   - pip
 
   - pip:
@@ -18,5 +19,5 @@ dependencies:
     - aio_pika
     - requests
     - torch
-    - nnsight==0.2.0.dev2
+    - git+https://github.com/ndif-team/nnsight.git@0.3
     - firebase-admin
