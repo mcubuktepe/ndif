@@ -32,8 +32,11 @@ class ResultModel(_ResultModel):
 
         return result
 
+
     @classmethod
-    def delete(cls, client: MongoClient, id: str) -> None:
+    def delete(
+        cls, client: MongoClient, id: str, logger: logging.Logger = None
+    ) -> None:
 
         results_collection = gridfs.GridFS(
             client["ndif_database"], collection="results"
@@ -42,6 +45,10 @@ class ResultModel(_ResultModel):
         id = ObjectId(id)
 
         results_collection.delete(id)
+
+        if logger is not None:
+
+            logger.info(f"DELETED Result: {id}")
 
     def save(self, client: MongoClient) -> ResultModel:
         results_collection = gridfs.GridFS(
@@ -80,6 +87,19 @@ class ResponseModel(_ResponseModel):
             response.result = ResultModel.load(client, id, stream=False)
 
         return response
+
+    @classmethod
+    def delete(
+        cls, client: MongoClient, id: str, logger: logging.Logger = None
+    ) -> None:
+
+        responses_collection = client["ndif_database"]["responses"]
+
+        responses_collection.delete_one({"_id": ObjectId(id)})
+
+        if logger is not None:
+
+            logger.info(f"DELETED Response: {id}")
 
     def save(self, client: MongoClient) -> ResponseModel:
         responses_collection = client["ndif_database"]["responses"]
