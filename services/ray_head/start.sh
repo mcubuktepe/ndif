@@ -9,6 +9,7 @@ ray start --head \
     --include-dashboard=true \
     --dashboard-host=0.0.0.0 \
     --dashboard-port=8265
+    # --system-config "{\"num_heartbeats_timeout\":300000000000}"
 
 serve deploy src/ray/config/ray_config.yml
 

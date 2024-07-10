@@ -10,7 +10,7 @@ try:
 except:
     pass
 
-from nnsight.schema.Request import RequestModel
+from nnsight.pydantics.Request import RequestModel
 
 from ...schema.Response import ResponseModel
 
@@ -31,7 +31,7 @@ class RequestDeployment:
 
         try:
 
-            model_key = f"Model:{slugify(request.model_key)}"
+            model_key = f"Model:{slugify(request.repo_id)}"
 
             app_handle = self.get_ray_app_handle(model_key)
 

@@ -1,4 +1,5 @@
 import gc
+import inspect
 import logging
 import os
 from typing import Dict
@@ -10,11 +11,12 @@ from ray import serve
 from ray.serve import Application
 from transformers import PreTrainedModel
 
-from nnsight.models.mixins import RemoteableMixin
-from nnsight.schema.Request import RequestModel
+from nnsight import LanguageModel
+from nnsight.pydantics.Request import RequestModel
 
 from ...schema.Response import ResponseModel, ResultModel
 from ..util import set_cuda_env_var
+from nnsight import util
 
 
 @serve.deployment()
@@ -27,9 +29,7 @@ class ModelDeployment:
         self.api_url = api_url
         self.database_url = database_url
 
-        self.model = RemoteableMixin.from_model_key(
-            self.model_key, device_map="auto", dispatch=True
-        )
+        self.model = LanguageModel(self.model_key, device_map="auto", dispatch=True)
 
         self.db_connection = MongoClient(self.database_url)
 
@@ -39,11 +39,14 @@ class ModelDeployment:
 
         try:
 
-            # Deserialize request
-            obj = request.deserialize(self.model)
+            request.compile()
 
-            # Execute object.
-            local_result = obj.local_backend_execute()
+            output = self.model.interleave(
+                self.model._execute,
+                request.intervention_graph,
+                *request.batched_input,
+                **request.kwargs,
+            )
 
             ResponseModel(
                 id=request.id,
@@ -53,7 +56,14 @@ class ModelDeployment:
                 description="Your job has been completed.",
                 result=ResultModel(
                     id=request.id,
-                    value=obj.remote_backend_postprocess_result(local_result),
+                    # Move all copied data to cpu
+                    saves={
+                        name: util.apply(
+                            node.value, lambda x: x.detach().cpu(), torch.Tensor
+                        )
+                        for name, node in request.intervention_graph.nodes.items()
+                        if node.value is not inspect._empty
+                    },
                 ),
             ).log(self.logger).save(self.db_connection).blocking_response(self.api_url)
 
@@ -68,7 +78,7 @@ class ModelDeployment:
             ).log(self.logger).save(self.db_connection).blocking_response(self.api_url)
 
         del request
-        del local_result
+        del output
 
         self.model._model.zero_grad()
 
@@ -80,7 +90,10 @@ class ModelDeployment:
 
         model: PreTrainedModel = self.model._model
 
-        return model.config.to_json_string()
+        return {
+            "config_json_string": model.config.to_json_string(),
+            "repo_id": model.config._name_or_path,
+        }
 
     # Ray checks this method and restarts replica if it raises an exception
     def check_health(self):
@@ -112,5 +125,5 @@ class ModelDeploymentArgs(BaseModel):
 
 
 def app(args: ModelDeploymentArgs) -> Application:
-    set_cuda_env_var()
+
     return ModelDeployment.bind(**args.model_dump())

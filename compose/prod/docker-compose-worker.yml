@@ -1,0 +1,16 @@
+services:
+  ray-worker:
+    image: ray_worker:latest
+    shm_size: '2gb'
+    volumes:
+      - /disk/u/jfiottok/.cache/huggingface/hub/:/root/.cache/huggingface/hub
+    environment:
+      RAY_ADDRESS: ray://nagoya.research.khoury.northeastern.edu:10001
+    deploy:
+      replicas: 1
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 8
+              capabilities: [ gpu ]

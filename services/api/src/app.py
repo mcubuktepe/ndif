@@ -18,7 +18,7 @@ from fastapi_socketio import SocketManager
 from pymongo import MongoClient
 from ray import serve
 
-from nnsight.schema.Request import RequestModel
+from nnsight.pydantics.Request import RequestModel
 
 from .api_key import api_key_auth
 from .schema import ResponseModel, ResultModel
@@ -202,7 +202,7 @@ async def ping():
     return "pong"
 
 
-@app.get("/status", status_code=200)
+@app.get("/stats", status_code=200)
 @cache(expire=120)
 async def status():
 
@@ -235,9 +235,9 @@ async def status():
                     "status": application_status,
                 }
 
-    for application_status in response.values():
+    for key, value in response.items():
 
-        application_status["status"] = await application_status["status"]
+        response[key] = await value["status"]
 
     return response
 
