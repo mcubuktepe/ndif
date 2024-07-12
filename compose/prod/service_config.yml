@@ -4,17 +4,19 @@ request_num_replicas: 1
 models:
 
   - model_key: 'google/gemma-7b'
-    cuda_memory_MB: 70000.0
+    cuda_memory_MB: 28000
     num_replicas: 1
 
   - model_key: 'EleutherAI/gpt-j-6b'
-    cuda_memory_MB: 60000.0
+    cuda_memory_MB: 24000
     num_replicas: 1
 
   - model_key: 'meta-llama/Meta-Llama-3-8B'
-    cuda_memory_MB: 80000.0
+    cuda_memory_MB: 32000
     num_replicas: 2
 
-  # - model_key: 'meta-llama/Meta-Llama-3-70B'
-  #   cuda_memory_MB: 700000.0
-  #   num_replicas: 1
+  - model_key: 'meta-llama/Meta-Llama-3-70B'
+    cuda_memory_MB: 600000
+    num_replicas: 1
+
+

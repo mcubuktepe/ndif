@@ -19,14 +19,11 @@ services:
 
   ray-head:
     image: ray_head:latest
-    shm_size: '2gb'
-    ports:
-      # Dashboard 
-      - 8265:8265
-      # Ray Address
-      - 6379:6379
-      # Client?
-      - 10001:10001
+    network_mode: "host"
+    shm_size: '15gb'
+    # environment:
+    #   RAY_health_check_initial_delay_ms: 600000
+    #   RAY_health_check_period_ms: 600000
     volumes:
       - /disk/u/jfiottok/.cache/huggingface/hub/:/root/.cache/huggingface/hub
       - /disk/u/jfiottok/wd/ndif/compose/prod/service_config.yml:/src/ray/config/service_config.yml
