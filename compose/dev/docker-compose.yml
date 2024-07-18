@@ -7,6 +7,15 @@ services:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - prometheus-data:/prometheus
+      - ../../prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - 9090:9090
+
   grafana:
     image: grafana/grafana:latest
     ports:
@@ -14,6 +23,10 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    depends_on:
+      - prometheus
 
   mongodb:
     image: mongodb/mongodb-community-server:6.0-ubi8
@@ -25,10 +38,11 @@ services:
     image: ray_head:latest
     shm_size: '2gb'
     ports:
-      # Dashboard 
-      - 8266:8265
+      - 8265:8265 # Dashboard 
+      - 8267:8267 # Metrics export port
     volumes:
       - /disk/u/mripa/.cache/huggingface/hub/:/root/.cache/huggingface/hub
+      - ray-data:/tmp/ray/session_latest
     deploy:
       replicas: 1
       resources:
@@ -37,6 +51,11 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [ gpu ]
+
+    environment:
+       - RAY_METRICS_EXPORT_PORT=8267
+       - RAY_JOB_METRICS_EXPORT_PORT=8267
+       - RAY_METRICS_GAUGE_EXPORT_INTERVAL_MS=1000
 
   api:
     depends_on:
@@ -52,3 +71,8 @@ services:
       WORKERS: 1
       RAY_ADDRESS: ray://ray-head:10001
       # FIREBASE_CREDS_PATH
+
+volumes:
+  grafana-storage:
+  prometheus-data:
+  ray-data:
