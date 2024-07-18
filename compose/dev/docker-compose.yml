@@ -7,6 +7,14 @@ services:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
 
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - 3000:3000
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+
   mongodb:
     image: mongodb/mongodb-community-server:6.0-ubi8
     environment:
@@ -20,14 +28,14 @@ services:
       # Dashboard 
       - 8266:8265
     volumes:
-      - /disk/u/jfiottok/.cache/huggingface/hub/:/root/.cache/huggingface/hub
+      - /disk/u/mripa/.cache/huggingface/hub/:/root/.cache/huggingface/hub
     deploy:
       replicas: 1
       resources:
         reservations:
           devices:
             - driver: nvidia
-              count: 8
+              count: 1
               capabilities: [ gpu ]
 
   api:
