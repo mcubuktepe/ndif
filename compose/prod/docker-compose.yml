@@ -21,13 +21,15 @@ services:
     image: ray_head:latest
     network_mode: "host"
     shm_size: '15gb'
-    # environment:
-    #   RAY_health_check_initial_delay_ms: 600000
-    #   RAY_health_check_period_ms: 600000
+    environment:
+      RAY_SERVE_QUEUE_LENGTH_RESPONSE_DEADLINE_S: 10
+      # RAY_health_check_initial_delay_ms: 600000
+      # RAY_health_check_period_ms: 600000
     volumes:
       - /disk/u/jfiottok/.cache/huggingface/hub/:/root/.cache/huggingface/hub
       - /disk/u/jfiottok/wd/ndif/compose/prod/service_config.yml:/src/ray/config/service_config.yml
       - /disk/u/jfiottok/wd/ndif/compose/prod/ray_config.yml:/src/ray/config/ray_config.yml
+      - /disk/u/jfiottok/wd/ndif/compose/prod/ray-head-start.sh:/start.sh
     deploy:
       replicas: 1
       resources:
