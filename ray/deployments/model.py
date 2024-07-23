@@ -30,6 +30,8 @@ class ModelDeployment:
         self.database_url = database_url
 
         self.model = LanguageModel(self.model_key, device_map="auto", dispatch=True)
+        
+        torch.cuda.empty_cache()
 
         self.db_connection = MongoClient(self.database_url)
 
