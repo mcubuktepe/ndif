@@ -1,6 +1,6 @@
 version: '3'
-services:
 
+services:
   rabbitmq:
     image: rabbitmq:3.11.28
     environment:
@@ -18,15 +18,8 @@ services:
       - ../../prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - 9090:9090
-
-  otel-collector:
-    image: otel/opentelemetry-collector:latest
-    container_name: otel-collector
-    volumes:
-      - ../../otel-collector/otel-collector-config.yml:/etc/otel-collector-config.yml
-    ports:
-      - 4317:4317 # OLTP reciever
     depends_on:
+      - api
       - ray-head
 
   grafana:
@@ -84,6 +77,7 @@ services:
       WORKERS: 1
       RAY_ADDRESS: ray://ray-head:10001
       # FIREBASE_CREDS_PATH
+
 
 volumes:
   grafana-storage:

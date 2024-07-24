@@ -15,6 +15,14 @@ from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
 from fastapi_cache.decorator import cache
 from fastapi_socketio import SocketManager
+from fastapi import FastAPI
+from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.sdk.resources import Resource
+from prometheus_fastapi_instrumentator import Instrumentator
 from pymongo import MongoClient
 from ray import serve
 
@@ -59,6 +67,23 @@ db_connection = MongoClient(os.environ.get("DATABASE_URL"))
 # Init Ray connection
 ray.init()
 
+# Setup OpenTelemetry Resource
+resource = Resource(attributes={"service.name": "ndif-fastapi"})
+
+# Set up trace provider
+trace.set_tracer_provider(TracerProvider(resource=resource))
+
+# Create an OTLP exporter
+otlp_exporter = OTLPSpanExporter(
+  endpoint="http://otel-collector:4317",
+  insecure=True
+)
+
+# Instrument FastAPI (for tracing)
+FastAPIInstrumentor.instrument_app(app)
+
+# Prometheus instrumentation (for metrics)
+Instrumentator().instrument(app).expose(app)
 
 @app.post("/request")
 async def request(
@@ -240,9 +265,6 @@ async def status():
         application_status["status"] = await application_status["status"]
 
     return response
-
-
-# FastAPIInstrumentor.instrument_app(app)
 
 
 if __name__ == "__main__":
