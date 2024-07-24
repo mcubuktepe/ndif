@@ -17,7 +17,7 @@ from fastapi_cache.decorator import cache
 from fastapi_socketio import SocketManager
 from fastapi import FastAPI
 from opentelemetry import trace
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.exporter.jaeger.thrift import JaegerExporter
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
@@ -70,16 +70,17 @@ ray.init()
 # Setup OpenTelemetry Resource
 resource = Resource(attributes={"service.name": "ndif-fastapi"})
 
-# Set up trace provider
-trace.set_tracer_provider(TracerProvider(resource=resource))
-
-# Create an OTLP exporter
-otlp_exporter = OTLPSpanExporter(
-  endpoint="http://otel-collector:4317",
-  insecure=True
+# Setup Jaeger exporter
+jaeger_exporter = JaegerExporter(
+  agent_host_name="jaeger",
+  agent_port=6831,
 )
 
-# Instrument FastAPI (for tracing)
+# Set up trace provider
+trace.set_tracer_provider(TracerProvider(resource=resource))
+trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(jaeger_exporter))
+
+# Jaeger instrumentation (for tracing)
 FastAPIInstrumentor.instrument_app(app)
 
 # Prometheus instrumentation (for metrics)
