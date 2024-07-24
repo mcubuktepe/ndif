@@ -1,22 +1,41 @@
-model_import_path: src.ray.deployments.model:app
+default_model_import_path: src.ray.deployments.model:app
 request_import_path: src.ray.deployments.request:app
 request_num_replicas: 1
 models:
 
   - model_key: 'google/gemma-7b'
-    cuda_memory_MB: 28000
+    ray_actor_options:
+      resources: 
+        cuda_memory_MB: 28000
     num_replicas: 1
 
   - model_key: 'EleutherAI/gpt-j-6b'
-    cuda_memory_MB: 24000
+    ray_actor_options:
+      resources: 
+        cuda_memory_MB: 24000
     num_replicas: 1
 
   - model_key: 'meta-llama/Meta-Llama-3-8B'
-    cuda_memory_MB: 32000
+    ray_actor_options:
+      resources: 
+        cuda_memory_MB: 32000
     num_replicas: 2
 
   - model_key: 'meta-llama/Meta-Llama-3-70B'
-    cuda_memory_MB: 600000
+    ray_actor_options:
+      resources: 
+        cuda_memory_MB: 600000
     num_replicas: 1
 
+
+  # - model_key: meta-llama/Meta-Llama-3.1-405B-Instruct
+  #   num_replicas: 1
+  #   model_import_path: src.ray.deployments.distributed_model:app
+  #   args:
+  #     torch_distributed_port: 5003
+  #     torch_distributed_world_size: 16
+  #     torch_distributed_world_timeout_seconds: 40
+  #     tensor_parallelism_size: 16
+  #   ray_actor_options:
+  #     num_gpus: 1
 

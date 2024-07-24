@@ -1,12 +1,11 @@
 import os
-from typing import Dict
+from typing import Dict, List
 
 from pydantic import BaseModel
 from ray import serve
-
-from ..raystate import RayState
-
 from ray.serve import Application
+
+from ..raystate import RayState, ServiceConfigurationSchema
 
 
 @serve.deployment(ray_actor_options={"num_cpus": 1, "resources": {"head": 1}})
@@ -32,16 +31,17 @@ class ControllerDeployment:
             self.database_url,
             self.api_url,
         )
-        
+
         self.state.apply()
-        
+
+
 class ControllerDeploymentArgs(BaseModel):
 
-    ray_config_path: str = os.environ.get('RAY_CONFIG_PATH', None)
-    service_config_path: str = os.environ.get('SERVICE_CONFIG_PATH', None)
-    ray_dashboard_url: str = os.environ.get('RAY_DASHBOARD_URL', None)
-    database_url: str = os.environ.get('DATABASE_URL', None)
-    api_url: str = os.environ.get('API_URL', None)
+    ray_config_path: str = os.environ.get("RAY_CONFIG_PATH", None)
+    service_config_path: str = os.environ.get("SERVICE_CONFIG_PATH", None)
+    ray_dashboard_url: str = os.environ.get("RAY_DASHBOARD_URL", None)
+    database_url: str = os.environ.get("DATABASE_URL", None)
+    api_url: str = os.environ.get("API_URL", None)
 
 
 def app(args: ControllerDeploymentArgs) -> Application:

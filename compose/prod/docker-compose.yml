@@ -23,6 +23,7 @@ services:
     shm_size: '15gb'
     environment:
       RAY_SERVE_QUEUE_LENGTH_RESPONSE_DEADLINE_S: 10
+      NCCL_DEBUG: INFO
       # RAY_health_check_initial_delay_ms: 600000
       # RAY_health_check_period_ms: 600000
     volumes:
@@ -50,6 +51,6 @@ services:
     environment:
       DATABASE_URL: mongodb://user:pass@nagoya.research.khoury.northeastern.edu:27017
       RMQ_URL: amqp://guest:guest@nagoya.research.khoury.northeastern.edu:5672/
-      WORKERS: 12
+      WORKERS: 9
       RAY_ADDRESS: ray://nagoya.research.khoury.northeastern.edu:10001
       FIREBASE_CREDS_PATH: /src/creds.json
