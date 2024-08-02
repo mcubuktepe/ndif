@@ -12,3 +12,7 @@ scrape_configs:
     static_configs:
       - targets: ['ray-head:8267']
     metrics_path: /metrics
+
+  - job_name: 'ray-gpu'
+    static_configs:
+      - targets: ['ray-head:4321']

@@ -4,10 +4,12 @@ import os
 from typing import Dict
 
 import torch
+from prometheus_client import Counter, Gauge, start_http_server
 from pydantic import BaseModel
 from pymongo import MongoClient
 from ray import serve
 from ray.serve import Application
+from torch.cuda import max_memory_allocated, reset_peak_memory_stats
 from transformers import PreTrainedModel
 
 from nnsight.models.mixins import RemoteableMixin
@@ -34,6 +36,8 @@ class ModelDeployment:
         self.db_connection = MongoClient(self.database_url)
 
         self.logger = logging.getLogger(__name__)
+        self.prometheus = start_http_server(4321)
+        self.gauge = Gauge('gpu_peak_memory', 'Approximation of peak GPU VRAM during a job')
 
     def __call__(self, request: RequestModel):
 
@@ -42,8 +46,16 @@ class ModelDeployment:
             # Deserialize request
             obj = request.deserialize(self.model)
 
+            # TODO: Figure out which device was used (currently can just assume device 0)
+            device = 'cuda:0'
+            reset_peak_memory_stats(device)
+            
             # Execute object.
             local_result = obj.local_backend_execute()
+            max_memory = max_memory_allocated(device)
+
+            # TODO: Convert memory to better format
+            self.gauge.set(max_memory)
 
             ResponseModel(
                 id=request.id,
