@@ -281,10 +281,10 @@ class ModelDeployment:
         del local_result
 
         self.model._model.zero_grad()
+        # For keeping cached cuda.
+        # gc.collect()
 
-        gc.collect()
-
-        torch.cuda.empty_cache()
+        # torch.cuda.empty_cache()
 
     # # Ray checks this method and restarts replica if it raises an exception
     # async def check_health(self):

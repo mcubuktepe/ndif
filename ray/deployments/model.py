@@ -9,14 +9,24 @@ from pydantic import BaseModel
 from pymongo import MongoClient
 from ray import serve
 from ray.serve import Application
-from transformers import PreTrainedModel
+from transformers import PreTrainedModel, AutoConfig
 
 from nnsight.models.mixins import RemoteableMixin
 from nnsight.schema.Request import RequestModel
+from nnsight import LanguageModel
 
 from ...schema.Response import ResponseModel, ResultModel
 from ..util import set_cuda_env_var, update_nnsight_print_function
+ray_serve_logger = logging.getLogger("ray.serve")
 
+class MockSAE:
+    def __init__(self):
+        pass
+
+    def encode(self, x):
+        return 2*x
+    def decode(self, x):
+        return 2*x
 
 @serve.deployment()
 class ModelDeployment:
@@ -31,13 +41,19 @@ class ModelDeployment:
 
         # Load and dispatch model based on model key.
         # The class returned could be any model type.
-        # Device_map = auto means even distribute parmeaters across all gpus
-        self.model = RemoteableMixin.from_model_key(
-            self.model_key, device_map="auto", dispatch=True
-        )
+        model_str = "meta-llama/Meta-Llama-3-8B-Instruct"
+        config = AutoConfig.from_pretrained(model_str)
+        config.attn_implementation = ("flash_attention_2",)
+
+        self.model = LanguageModel(model_str, device_map='cuda', torch_dtype=torch.bfloat16,config=config)
+
+        self.model.sae = MockSAE()
+        # self.model = RemoteableMixin.from_model_key(
+        #     self.model_key, device_map="auto", dispatch=True
+        # )
         # Make model weights non trainable / no grad.
         self.model._model.requires_grad_(False)
-
+        self.model.dispatch_model()
         # Clear cuda cache after model load.
         torch.cuda.empty_cache()
 
@@ -50,7 +66,7 @@ class ModelDeployment:
         self.running = False
 
     def __call__(self, request: RequestModel):
-
+        ray_serve_logger.error("ray deployments.model.modeldeployment line 69")
         # Send RUNNING response.
         ResponseModel(
             id=request.id,
@@ -61,11 +77,11 @@ class ModelDeployment:
         ).log(self.logger).save(self.db_connection).blocking_response(
             self.api_url
         )
-        
+        ray_serve_logger.error("ray deployments.model.modeldeployment line 80")
         local_result = None
 
         try:
-
+            ray_serve_logger.error("ray deployments.model.modeldeployment line 84")
             # Changes the nnsight intervention graph function to respond via the ResponseModel instead of printing.
             update_nnsight_print_function(
                 partial(
@@ -79,13 +95,26 @@ class ModelDeployment:
             )
 
             self.running = True
+            ray_serve_logger.error(request)
+            ray_serve_logger.error("ray deployments.model.modeldeployment line 99")
 
             # Deserialize request
             obj = request.deserialize(self.model)
+            ray_serve_logger.error(obj)
+            ray_serve_logger.error(dir(obj))
+            ray_serve_logger.error(type(obj))
+
+            ray_serve_logger.error("ray deployments.model.modeldeployment line 106")
 
             # Execute object.
-            local_result = obj.local_backend_execute()
 
+            local_result = obj.local_backend_execute()
+            ray_serve_logger.error("ray deployments.model.modeldeployment line 116")
+
+            # print(b)
+            ray_serve_logger.error("value")            
+
+            #ray_serve_logger.error(obj.remote_backend_postprocess_result(local_result))            
             # Send COMPELTED response.
             ResponseModel(
                 id=request.id,
@@ -100,6 +129,8 @@ class ModelDeployment:
             ).log(self.logger).save(self.db_connection).blocking_response(
                 self.api_url
             )
+            ray_serve_logger.error("ray deployments.model.modeldeployment line 137")
+            ray_serve_logger.error(self.api_url)
 
         except Exception as exception:
 
@@ -122,9 +153,9 @@ class ModelDeployment:
 
         self.model._model.zero_grad()
 
-        gc.collect()
+        # gc.collect()
 
-        torch.cuda.empty_cache()
+        # torch.cuda.empty_cache()
 
     def log_to_user(self, data: Any, params: Dict[str, Any]):
 

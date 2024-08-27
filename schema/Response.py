@@ -14,6 +14,7 @@ from pymongo import MongoClient
 from nnsight.schema.Response import ResponseModel as _ResponseModel
 from nnsight.schema.Response import ResultModel as _ResultModel
 
+ray_serve_logger = logging.getLogger("ray.serve")
 
 class ResultModel(_ResultModel):    
 
@@ -22,6 +23,7 @@ class ResultModel(_ResultModel):
         results_collection = gridfs.GridFS(
             client["ndif_database"], collection="results"
         )
+        ray_serve_logger.error("ray schema.response.resultmodel line 26")
 
         gridout = results_collection.find_one(ObjectId(id))
 
@@ -29,6 +31,7 @@ class ResultModel(_ResultModel):
             return gridout
 
         result = ResultModel(**torch.load(gridout, map_location="cpu"))
+        ray_serve_logger.error("ray schema.response.resultmodel line 34")
 
         return result
 
@@ -51,6 +54,8 @@ class ResultModel(_ResultModel):
             logger.info(f"DELETED Result: {id}")
 
     def save(self, client: MongoClient) -> ResultModel:
+        ray_serve_logger.error("ray schema.response.resultmodel line 57")
+
         results_collection = gridfs.GridFS(
             client["ndif_database"], collection="results"
         )
@@ -62,8 +67,10 @@ class ResultModel(_ResultModel):
         buffer = io.BytesIO()
         torch.save(self.model_dump(), buffer)
         buffer.seek(0)
+        ray_serve_logger.error("ray schema.response.resultmodel line 70")
 
         results_collection.put(buffer, _id=id)
+        ray_serve_logger.error("ray schema.response.resultmodel line 73")
 
         return self
 
@@ -77,14 +84,19 @@ class ResponseModel(_ResponseModel):
         id: str,
         result: bool = True,
     ) -> ResponseModel:
+        ray_serve_logger.error("ray schema.response.responsemodel line 87")
+
         responses_collection = client["ndif_database"]["responses"]
+        ray_serve_logger.error("ray schema.response.responsemodel line 90")
 
         response = ResponseModel(
             **responses_collection.find_one({"_id": ObjectId(id)}, {"_id": False})
         )
+        ray_serve_logger.error("ray schema.response.responsemodel line 95")
 
         if result and response.status == ResponseModel.JobStatus.COMPLETED:
             response.result = ResultModel.load(client, id, stream=False)
+        ray_serve_logger.error("ray schema.response.responsemodel line 99")
 
         return response
 
@@ -92,6 +104,7 @@ class ResponseModel(_ResponseModel):
     def delete(
         cls, client: MongoClient, id: str, logger: logging.Logger = None
     ) -> None:
+        ray_serve_logger.error("ray schema.response.responsemodel line 107")
 
         responses_collection = client["ndif_database"]["responses"]
 
@@ -102,10 +115,13 @@ class ResponseModel(_ResponseModel):
             logger.info(f"DELETED Response: {id}")
 
     def save(self, client: MongoClient) -> ResponseModel:
+        ray_serve_logger.error("ray schema.response.responsemodel line 118")
+
         responses_collection = client["ndif_database"]["responses"]
 
         if self.result is not None:
             self.result.save(client)
+        ray_serve_logger.error("ray schema.response.responsemodel line 124")
 
         responses_collection.replace_one(
             {"_id": ObjectId(self.id)},
@@ -114,6 +130,7 @@ class ResponseModel(_ResponseModel):
             ),
             upsert=True,
         )
+        ray_serve_logger.error("ray schema.response.responsemodel line 133")
 
         return self
 

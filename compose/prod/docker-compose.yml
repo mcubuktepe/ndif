@@ -28,16 +28,16 @@ services:
       # Client?
       - 10001:10001
     volumes:
-      - /disk/u/jfiottok/.cache/huggingface/hub/:/root/.cache/huggingface/hub
-      - /disk/u/jfiottok/wd/ndif/compose/prod/service_config.yml:/src/ray/config/service_config.yml
-      - /disk/u/jfiottok/wd/ndif/compose/prod/ray_config.yml:/src/ray/config/ray_config.yml
+      - /home/ubuntu/.cache/huggingface/hub:/root/.cache/huggingface/hub
+      - /home/ubuntu/ndif/compose/prod/service_config.yml:/src/ray/config/service_config.yml
+      - /home/ubuntu/ndif/compose/prod/ray_config.yml:/src/ray/config/ray_config.yml
     deploy:
       replicas: 1
       resources:
         reservations:
           devices:
             - driver: nvidia
-              count: 8
+              count: 1
               capabilities: [ gpu ]
 
   api:

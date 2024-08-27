@@ -14,6 +14,8 @@ from nnsight.schema.Request import RequestModel
 
 from ...schema.Response import ResponseModel
 
+ray_serve_logger = logging.getLogger("ray.serve")
+
 
 @serve.deployment()
 class RequestDeployment:
@@ -32,10 +34,13 @@ class RequestDeployment:
         try:
 
             model_key = f"Model:{slugify(request.model_key)}"
+            ray_serve_logger.error("ray deployments.request.requestdeployment line 37")
 
             app_handle = self.get_ray_app_handle(model_key)
+            ray_serve_logger.error("ray deployments.request.requestdeployment line 40")
 
             app_handle.remote(request)
+            ray_serve_logger.error("ray deployments.request.requestdeployment line 43")
 
             ResponseModel(
                 id=request.id,
@@ -44,6 +49,7 @@ class RequestDeployment:
                 status=ResponseModel.JobStatus.APPROVED,
                 description="Your job was approved and is waiting to be run.",
             ).log(self.logger).save(self.db_connection).blocking_response(self.api_url)
+            ray_serve_logger.error("ray deployments.request.requestdeployment line 52")
 
         except Exception as exception:
             ResponseModel(

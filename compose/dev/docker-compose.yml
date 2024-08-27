@@ -17,10 +17,10 @@ services:
 
   ray-head:
     image: ray_head:latest
-    shm_size: '2gb'
+    shm_size: '12gb'
     network_mode: "host"
     volumes:
-      - /share/u/jadenfk/.cache/huggingface/hub:/root/.cache/huggingface/hub
+      - /home/ubuntu/.cache/huggingface/hub:/root/.cache/huggingface/hub
       - ray-data:/tmp/ray/session_latest
     deploy:
       replicas: 1
@@ -28,12 +28,13 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              count: 2
+              count: 1
               capabilities: [ gpu ]
     environment:
        - RAY_METRICS_EXPORT_PORT=8267
        - RAY_JOB_METRICS_EXPORT_PORT=8267
        - RAY_METRICS_GAUGE_EXPORT_INTERVAL_MS=1000
+       - HF_TOKEN="add hf token"
 
   api:
     depends_on:
@@ -48,6 +49,7 @@ services:
       WORKERS: 1
       RAY_ADDRESS: ray://localhost:10001
       # FIREBASE_CREDS_PATH
+      HF_TOKEN: "add hf token"
 
   prometheus:
     image: prom/prometheus:latest

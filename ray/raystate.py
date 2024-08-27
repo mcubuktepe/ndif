@@ -1,5 +1,6 @@
 import urllib.parse
 from typing import Any, Dict, List
+import logging 
 
 try:
     from slugify import slugify
@@ -18,6 +19,7 @@ from ray.serve.schema import (
 from .deployments.model import ModelDeploymentArgs
 from .deployments.request import RequestDeploymentArgs
 
+logger =  logging.getLogger(__name__)
 
 class ServiceConfigurationSchema(BaseModel):
     class ModelConfigurationSchema(BaseModel):
@@ -54,10 +56,13 @@ class RayState:
 
         with open(ray_config_path, "r") as file:
             self.ray_config = ServeDeploySchema(**yaml.safe_load(file))
-
+        print("self service config path")
+        print(service_config_path)
         with open(service_config_path, "r") as file:
             self.service_config = ServiceConfigurationSchema(**yaml.safe_load(file))
-
+        logger.error("self. request import path:",self.service_config.request_import_path)
+        logger.error("self service config models", self.service_config.models)
+        logger.error("dashboard url", self.ray_dashboard_url)
         self.add_request_app()
 
         for model_config in self.service_config.models:
@@ -70,6 +75,8 @@ class RayState:
         )
 
     def add_request_app(self) -> None:
+        logger.error("adding request app")
+        print("self. request import path:",self.service_config.request_import_path)
         application = ServeApplicationSchema(
             name="Request",
             import_path=self.service_config.request_import_path,
